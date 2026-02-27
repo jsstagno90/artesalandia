@@ -49,15 +49,24 @@ const ExcelImport = () => {
     reader.onload = (evt) => {
       const wb = XLSX.read(evt.target?.result, { type: "binary" });
       const ws = wb.Sheets[wb.SheetNames[0]];
-      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
+
+      // First get all headers from the sheet range
+      const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
+      const headers: string[] = [];
+      for (let c = range.s.c; c <= range.e.c; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
+        headers.push(cell ? String(cell.v).trim() : `Columna ${c + 1}`);
+      }
+
+      // Parse with defval to keep empty cells
+      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
 
       if (data.length === 0) {
         toast.error("El archivo está vacío");
         return;
       }
 
-      const cols = Object.keys(data[0]);
-      setExcelColumns(cols);
+      setExcelColumns(headers);
       setRawData(data);
 
       // Auto-match columns by similarity
@@ -73,7 +82,7 @@ const ExcelImport = () => {
         valor_atributo: ["valor atributo", "valor_atributo", "atributo valor"],
       };
 
-      for (const col of cols) {
+      for (const col of headers) {
         const lower = col.toLowerCase().trim();
         for (const [field, patterns] of Object.entries(matchers)) {
           if (patterns.some((p) => lower === p || lower.includes(p))) {
