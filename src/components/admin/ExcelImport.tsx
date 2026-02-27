@@ -29,12 +29,12 @@ const ExcelImport = () => {
       const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws);
 
       const parsed: ParsedRow[] = data.map((r) => ({
-        sku: String(r["SKU"] ?? ""),
-        nombre: String(r["Nombre"] ?? ""),
-        precio: Number(r["Precio"] ?? 0),
-        categoria: String(r["Categoría"] ?? r["Categoria"] ?? ""),
-        nombre_atributo: String(r["Nombre Atributo"] ?? ""),
-        valor_atributo: String(r["Valor Atributo"] ?? ""),
+        sku: String(r["SKU"] ?? r["sku"] ?? ""),
+        nombre: String(r["Nombre"] ?? r["nombre"] ?? ""),
+        precio: Number(r["Precio"] ?? r["precio"] ?? 0),
+        categoria: String(r["Categorías"] ?? r["Categorias"] ?? r["Categoría"] ?? r["Categoria"] ?? r["categorias"] ?? r["categoria"] ?? ""),
+        nombre_atributo: String(r["Nombre atributo"] ?? r["Nombre Atributo"] ?? r["nombre_atributo"] ?? r["nombre atributo"] ?? ""),
+        valor_atributo: String(r["Valor atributo"] ?? r["Valor Atributo"] ?? r["valor_atributo"] ?? r["valor atributo"] ?? ""),
       }));
 
       setRows(parsed);
@@ -78,7 +78,7 @@ const ExcelImport = () => {
       <div>
         <h2 className="font-display text-xl font-semibold mb-1">Importar productos desde Excel</h2>
         <p className="text-sm text-muted-foreground">
-          Columnas esperadas: SKU | Nombre | Precio | Categoría | Nombre Atributo | Valor Atributo
+          Columnas esperadas: SKU | Nombre | Precio | Categorías | Nombre atributo | Valor atributo
         </p>
       </div>
 
