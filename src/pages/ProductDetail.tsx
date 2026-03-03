@@ -21,7 +21,7 @@ const ProductDetail = () => {
         .select("*, categorias(nombre)")
         .eq("nombre", decodedName);
       if (error) throw error;
-      return data;
+      return (data || []).sort((a: any, b: any) => a.precio - b.precio);
     },
     enabled: !!decodedName,
   });

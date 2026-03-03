@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { Plus, Pencil, Trash2, Loader2, Save, X } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Save, X, CheckSquare } from "lucide-react";
 
 interface Categoria {
   id: string;
@@ -30,6 +31,7 @@ const CategoryManager = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [saving, setSaving] = useState(false);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const { data: categorias, isLoading } = useQuery({
     queryKey: ["categorias-admin"],
@@ -42,6 +44,24 @@ const CategoryManager = () => {
       return data as Categoria[];
     },
   });
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (!categorias) return;
+    if (selected.size === categorias.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(categorias.map((c) => c.id)));
+    }
+  };
 
   const handleCreate = async () => {
     const name = newName.trim();
@@ -99,6 +119,37 @@ const CategoryManager = () => {
     }
   };
 
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`¿Eliminar ${selected.size} categoría(s)?`)) return;
+    const { error } = await supabase
+      .from("categorias")
+      .delete()
+      .in("id", Array.from(selected));
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`${selected.size} categoría(s) eliminada(s)`);
+      setSelected(new Set());
+      queryClient.invalidateQueries({ queryKey: ["categorias-admin"] });
+    }
+  };
+
+  const handleBulkToggle = async (activa: boolean) => {
+    if (selected.size === 0) return;
+    const { error } = await supabase
+      .from("categorias")
+      .update({ activa })
+      .in("id", Array.from(selected));
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success(`${selected.size} categoría(s) ${activa ? "activada(s)" : "desactivada(s)"}`);
+      setSelected(new Set());
+      queryClient.invalidateQueries({ queryKey: ["categorias-admin"] });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -124,6 +175,20 @@ const CategoryManager = () => {
         </Button>
       </div>
 
+      {/* Bulk actions */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 bg-muted/50 border rounded-lg px-4 py-2">
+          <span className="text-sm font-medium">{selected.size} seleccionada(s)</span>
+          <div className="flex gap-2 ml-auto">
+            <Button size="sm" variant="outline" onClick={() => handleBulkToggle(true)}>Activar</Button>
+            <Button size="sm" variant="outline" onClick={() => handleBulkToggle(false)}>Desactivar</Button>
+            <Button size="sm" variant="destructive" onClick={handleBulkDelete} className="gap-1">
+              <Trash2 className="h-3.5 w-3.5" /> Eliminar
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* List */}
       {isLoading ? (
         <div className="flex justify-center py-10">
@@ -136,6 +201,12 @@ const CategoryManager = () => {
           <table className="w-full text-sm">
             <thead className="bg-muted/50">
               <tr>
+                <th className="p-3 w-10">
+                  <Checkbox
+                    checked={categorias.length > 0 && selected.size === categorias.length}
+                    onCheckedChange={toggleAll}
+                  />
+                </th>
                 <th className="text-left p-3">Nombre</th>
                 <th className="text-left p-3">Slug</th>
                 <th className="text-center p-3">Activa</th>
@@ -145,6 +216,12 @@ const CategoryManager = () => {
             <tbody>
               {categorias.map((cat) => (
                 <tr key={cat.id} className="border-t">
+                  <td className="p-3">
+                    <Checkbox
+                      checked={selected.has(cat.id)}
+                      onCheckedChange={() => toggleSelect(cat.id)}
+                    />
+                  </td>
                   <td className="p-3">
                     {editingId === cat.id ? (
                       <Input
