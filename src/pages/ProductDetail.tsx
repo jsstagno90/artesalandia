@@ -77,7 +77,7 @@ const ProductDetail = () => {
           <div className="space-y-3">
             <div className="aspect-square rounded-xl overflow-hidden bg-muted border">
               {currentMain ? (
-                <img src={currentMain} alt={selected.nombre} className="w-full h-full object-cover" />
+                <img src={currentMain} alt={selected.nombre} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
                   <Package className="h-16 w-16 text-muted-foreground/40" />
@@ -94,7 +94,7 @@ const ProductDetail = () => {
                       currentMain === img ? "border-primary" : "border-transparent hover:border-muted-foreground/30"
                     }`}
                   >
-                    <img src={img} alt={`${selected.nombre} ${i + 1}`} className="w-full h-full object-cover" />
+                    <img src={img} alt={`${selected.nombre} ${i + 1}`} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                   </button>
                 ))}
               </div>

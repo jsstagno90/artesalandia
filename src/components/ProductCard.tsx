@@ -12,6 +12,8 @@ interface Props {
 
 const ProductCard = ({ product }: Props) => {
   const [selectedIdx, setSelectedIdx] = useState(0);
+  const [imgError, setImgError] = useState(false);
+  const [imgLoaded, setImgLoaded] = useState(false);
   const { addItem } = useCart();
   const hasVariants = product.variantes.length > 1;
   const selected = product.variantes[selectedIdx];
@@ -35,12 +37,25 @@ const ProductCard = ({ product }: Props) => {
       className="bg-card rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow duration-300 flex flex-col"
     >
       <div className="aspect-square bg-muted relative overflow-hidden">
-        {product.imagen_url ? (
-          <img
-            src={product.imagen_url}
-            alt={product.nombre}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
+        {product.imagen_url && !imgError ? (
+          <>
+            {!imgLoaded && (
+              <div className="absolute inset-0 flex items-center justify-center bg-muted animate-pulse">
+                <Package className="h-10 w-10 text-muted-foreground/30" />
+              </div>
+            )}
+            <img
+              src={product.imagen_url}
+              alt={product.nombre}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              onLoad={() => setImgLoaded(true)}
+              onError={() => setImgError(true)}
+              className={`w-full h-full object-cover group-hover:scale-105 transition-all duration-500 ${
+                imgLoaded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </>
         ) : (
           <div className="w-full h-full flex items-center justify-center">
             <Package className="h-12 w-12 text-muted-foreground/40" />
