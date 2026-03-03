@@ -96,5 +96,9 @@ export const groupProducts = (products: Producto[]): ProductGroup[] => {
       sku: p.sku,
     });
   }
-  return Array.from(map.values());
+  const groups = Array.from(map.values());
+  for (const g of groups) {
+    g.variantes.sort((a, b) => a.precio - b.precio);
+  }
+  return groups;
 };
