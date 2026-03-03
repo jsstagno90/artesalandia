@@ -27,12 +27,21 @@ export const useProducts = () => {
   return useQuery({
     queryKey: ["productos"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("productos")
-        .select("*")
-        .order("nombre");
-      if (error) throw error;
-      return data as Producto[];
+      const allProducts: Producto[] = [];
+      let from = 0;
+      const PAGE = 1000;
+      while (true) {
+        const { data, error } = await supabase
+          .from("productos")
+          .select("*")
+          .order("nombre")
+          .range(from, from + PAGE - 1);
+        if (error) throw error;
+        allProducts.push(...(data as Producto[]));
+        if (data.length < PAGE) break;
+        from += PAGE;
+      }
+      return allProducts;
     },
   });
 };
