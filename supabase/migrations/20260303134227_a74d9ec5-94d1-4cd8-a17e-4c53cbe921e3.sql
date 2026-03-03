@@ -1,0 +1,1 @@
+DELETE FROM productos; DELETE FROM categorias;
