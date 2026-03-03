@@ -7,10 +7,10 @@ import { Loader2 } from "lucide-react";
 const Products = () => {
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
 
-  const filtered = activeCategory
-    ? (products || []).filter((p) => p.categoria === activeCategory)
+  const filtered = activeCategoryId
+    ? (products || []).filter((p) => p.categoria_id === activeCategoryId)
     : products || [];
 
   const grouped = groupProducts(filtered);
@@ -21,24 +21,23 @@ const Products = () => {
         <h1 className="font-display text-3xl md:text-4xl font-bold mb-2">Nuestros Productos</h1>
         <p className="text-muted-foreground mb-8">Explorá nuestro catálogo completo</p>
 
-        {/* Category filter */}
         {categories && categories.length > 0 && (
           <div className="flex flex-wrap gap-2 mb-8">
             <Button
-              variant={activeCategory === null ? "default" : "outline"}
+              variant={activeCategoryId === null ? "default" : "outline"}
               size="sm"
-              onClick={() => setActiveCategory(null)}
+              onClick={() => setActiveCategoryId(null)}
             >
               Todos
             </Button>
             {categories.map((c) => (
               <Button
-                key={c}
-                variant={activeCategory === c ? "default" : "outline"}
+                key={c.id}
+                variant={activeCategoryId === c.id ? "default" : "outline"}
                 size="sm"
-                onClick={() => setActiveCategory(c)}
+                onClick={() => setActiveCategoryId(c.id)}
               >
-                {c}
+                {c.nombre}
               </Button>
             ))}
           </div>

@@ -12,22 +12,24 @@ import { useQueryClient } from "@tanstack/react-query";
 const PriceUpdater = () => {
   const { data: categories } = useCategories();
   const { data: products } = useProducts();
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set()); // category IDs
   const [percentage, setPercentage] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [updating, setUpdating] = useState(false);
   const queryClient = useQueryClient();
 
-  const toggleCat = (cat: string) => {
+  const toggleCat = (id: string) => {
     setSelected((prev) => {
       const n = new Set(prev);
-      n.has(cat) ? n.delete(cat) : n.add(cat);
+      n.has(id) ? n.delete(id) : n.add(id);
       return n;
     });
     setShowConfirm(false);
   };
 
-  const affectedCount = (products || []).filter((p) => p.categoria && selected.has(p.categoria)).length;
+  const affectedCount = (products || []).filter((p) => p.categoria_id && selected.has(p.categoria_id)).length;
+
+  const selectedNames = (categories || []).filter((c) => selected.has(c.id)).map((c) => c.nombre);
 
   const handlePreview = () => {
     if (selected.size === 0 || !percentage) {
@@ -44,9 +46,8 @@ const PriceUpdater = () => {
     setUpdating(true);
     const factor = 1 + pct / 100;
 
-    const toUpdate = (products || []).filter((p) => p.categoria && selected.has(p.categoria));
+    const toUpdate = (products || []).filter((p) => p.categoria_id && selected.has(p.categoria_id));
 
-    // Update each product price
     const promises = toUpdate.map((p) =>
       supabase
         .from("productos")
@@ -84,16 +85,16 @@ const PriceUpdater = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {categories.map((cat) => (
                 <label
-                  key={cat}
+                  key={cat.id}
                   className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selected.has(cat) ? "bg-primary/10 border-primary" : "bg-card"
+                    selected.has(cat.id) ? "bg-primary/10 border-primary" : "bg-card"
                   }`}
                 >
                   <Checkbox
-                    checked={selected.has(cat)}
-                    onCheckedChange={() => toggleCat(cat)}
+                    checked={selected.has(cat.id)}
+                    onCheckedChange={() => toggleCat(cat.id)}
                   />
-                  <span className="text-sm font-medium">{cat}</span>
+                  <span className="text-sm font-medium">{cat.nombre}</span>
                 </label>
               ))}
             </div>
@@ -120,7 +121,7 @@ const PriceUpdater = () => {
             <div className="bg-muted border rounded-xl p-5 space-y-3">
               <p className="font-semibold">
                 Se van a actualizar <span className="text-primary">{affectedCount} productos</span> en las categorías:{" "}
-                {[...selected].join(", ")}
+                {selectedNames.join(", ")}
               </p>
               <p className="text-sm text-muted-foreground">
                 Ajuste: {parseFloat(percentage) > 0 ? "+" : ""}{percentage}%

@@ -6,11 +6,21 @@ export interface Producto {
   sku: string | null;
   nombre: string;
   categoria: string | null;
+  categoria_id: string | null;
   nombre_atributo: string | null;
   valor_atributo: string | null;
   precio: number;
   imagen_url: string | null;
+  imagen_url_2: string | null;
+  imagen_url_3: string | null;
   created_at: string;
+}
+
+export interface Categoria {
+  id: string;
+  nombre: string;
+  slug: string;
+  activa: boolean;
 }
 
 export const useProducts = () => {
@@ -27,24 +37,29 @@ export const useProducts = () => {
   });
 };
 
-export const useCategories = () => {
+export const useCategoriesFromTable = () => {
   return useQuery({
-    queryKey: ["categorias"],
+    queryKey: ["categorias-table"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("productos")
-        .select("categoria")
-        .order("categoria");
+        .from("categorias")
+        .select("*")
+        .eq("activa", true)
+        .order("nombre");
       if (error) throw error;
-      const unique = [...new Set(data.map((d) => d.categoria).filter(Boolean))] as string[];
-      return unique;
+      return data as Categoria[];
     },
   });
+};
+
+export const useCategories = () => {
+  return useCategoriesFromTable();
 };
 
 export interface ProductGroup {
   nombre: string;
   categoria: string | null;
+  categoria_id: string | null;
   imagen_url: string | null;
   nombre_atributo: string | null;
   variantes: { id: string; valor_atributo: string | null; precio: number; sku: string | null }[];
@@ -57,6 +72,7 @@ export const groupProducts = (products: Producto[]): ProductGroup[] => {
       map.set(p.nombre, {
         nombre: p.nombre,
         categoria: p.categoria,
+        categoria_id: p.categoria_id,
         imagen_url: p.imagen_url,
         nombre_atributo: p.nombre_atributo,
         variantes: [],

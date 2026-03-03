@@ -8,6 +8,7 @@ import Header from "@/components/Header";
 import CartDrawer from "@/components/CartDrawer";
 import Index from "./pages/Index";
 import Products from "./pages/Products";
+import ProductDetail from "./pages/ProductDetail";
 import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
@@ -39,6 +40,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/productos" element={<Products />} />
+              <Route path="/producto/:nombre" element={<ProductDetail />} />
               <Route path="/contacto" element={<Contact />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/admin/login" element={<AdminLogin />} />

@@ -3,11 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, FileSpreadsheet, Image, DollarSign, Settings } from "lucide-react";
+import { LogOut, FileSpreadsheet, Image, DollarSign, Settings, Tag } from "lucide-react";
 import ExcelImport from "@/components/admin/ExcelImport";
 import ImageManager from "@/components/admin/ImageManager";
 import PriceUpdater from "@/components/admin/PriceUpdater";
 import ConfigPanel from "@/components/admin/ConfigPanel";
+import CategoryManager from "@/components/admin/CategoryManager";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -46,9 +47,12 @@ const Admin = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="import" className="space-y-6">
-          <TabsList className="grid grid-cols-2 md:grid-cols-4 h-auto gap-2 bg-transparent p-0">
+          <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto gap-2 bg-transparent p-0">
             <TabsTrigger value="import" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 border">
               <FileSpreadsheet className="h-4 w-4" /> Importar
+            </TabsTrigger>
+            <TabsTrigger value="categories" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 border">
+              <Tag className="h-4 w-4" /> Categorías
             </TabsTrigger>
             <TabsTrigger value="images" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 border">
               <Image className="h-4 w-4" /> Imágenes
@@ -62,6 +66,7 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="import"><ExcelImport /></TabsContent>
+          <TabsContent value="categories"><CategoryManager /></TabsContent>
           <TabsContent value="images"><ImageManager /></TabsContent>
           <TabsContent value="prices"><PriceUpdater /></TabsContent>
           <TabsContent value="config"><ConfigPanel /></TabsContent>

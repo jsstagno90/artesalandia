@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { ShoppingCart, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -15,7 +16,9 @@ const ProductCard = ({ product }: Props) => {
   const hasVariants = product.variantes.length > 1;
   const selected = product.variantes[selectedIdx];
 
-  const handleAdd = () => {
+  const handleAdd = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
     addItem({
       id: selected.id,
       nombre: product.nombre,
@@ -27,7 +30,10 @@ const ProductCard = ({ product }: Props) => {
   };
 
   return (
-    <div className="bg-card rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow duration-300 flex flex-col">
+    <Link
+      to={`/producto/${encodeURIComponent(product.nombre)}`}
+      className="bg-card rounded-xl border overflow-hidden group hover:shadow-lg transition-shadow duration-300 flex flex-col"
+    >
       <div className="aspect-square bg-muted relative overflow-hidden">
         {product.imagen_url ? (
           <img
@@ -47,7 +53,7 @@ const ProductCard = ({ product }: Props) => {
         <h3 className="font-display text-lg font-semibold leading-tight">{product.nombre}</h3>
 
         {hasVariants && (
-          <div className="mt-1">
+          <div className="mt-1" onClick={(e) => e.preventDefault()}>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">
               {product.nombre_atributo}
             </label>
@@ -77,7 +83,7 @@ const ProductCard = ({ product }: Props) => {
           </Button>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 

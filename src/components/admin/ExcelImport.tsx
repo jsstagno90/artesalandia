@@ -9,14 +9,14 @@ import * as XLSX from "xlsx";
 
 const EXPECTED_FIELDS = [
   { key: "sku", label: "SKU" },
-  { key: "nombre", label: "Nombre" },
-  { key: "precio", label: "Precio" },
-  { key: "categoria", label: "Categoría" },
-  { key: "nombre_atributo", label: "Nombre atributo" },
-  { key: "valor_atributo", label: "Valor atributo" },
-  { key: "imagen_url", label: "URL imagen 1" },
-  { key: "imagen_url_2", label: "URL imagen 2" },
-  { key: "imagen_url_3", label: "URL imagen 3" },
+  { key: "nombre", label: "Nombre", required: true },
+  { key: "precio", label: "Precio", required: true },
+  { key: "categoria", label: "Categorías" },
+  { key: "nombre_atributo", label: "Nombre atributo 1" },
+  { key: "valor_atributo", label: "Valor atributo 1" },
+  { key: "imagen_url", label: "URL" },
+  { key: "imagen_url_2", label: "URL 2" },
+  { key: "imagen_url_3", label: "URL 3" },
 ] as const;
 
 type FieldKey = (typeof EXPECTED_FIELDS)[number]["key"];
@@ -85,9 +85,9 @@ const ExcelImport = () => {
         nombre: ["nombre"],
         precio: ["precio"],
         categoria: ["categoria", "categoría", "categorias", "categorías"],
-        nombre_atributo: ["nombre atributo", "nombre_atributo", "atributo nombre"],
-        valor_atributo: ["valor atributo", "valor_atributo", "atributo valor"],
-        imagen_url: ["url 1", "url1", "imagen 1", "imagen_url", "url imagen 1"],
+        nombre_atributo: ["nombre atributo", "nombre_atributo", "atributo nombre", "nombre atributo 1"],
+        valor_atributo: ["valor atributo", "valor_atributo", "atributo valor", "valor atributo 1"],
+        imagen_url: ["url", "url 1", "url1", "imagen 1", "imagen_url", "url imagen 1"],
         imagen_url_2: ["url 2", "url2", "imagen 2", "imagen_url_2", "url imagen 2"],
         imagen_url_3: ["url 3", "url3", "imagen 3", "imagen_url_3", "url imagen 3"],
       };
@@ -137,41 +137,82 @@ const ExcelImport = () => {
     setImporting(true);
     setImportProgress(0);
 
-    const allInserts = rows.map((r) => ({
-      sku: r.sku || null,
-      nombre: r.nombre,
-      precio: r.precio,
-      categoria: r.categoria || null,
-      nombre_atributo: r.nombre_atributo || null,
-      valor_atributo: r.valor_atributo || null,
-      imagen_url: r.imagen_url || null,
-      imagen_url_2: r.imagen_url_2 || null,
-      imagen_url_3: r.imagen_url_3 || null,
-    }));
+    try {
+      // 1. Collect unique category names
+      const uniqueCats = [...new Set(rows.map((r) => r.categoria.trim()).filter(Boolean))];
 
-    let imported = 0;
-    let hasError = false;
+      // 2. Fetch existing categories
+      const { data: existingCats } = await supabase
+        .from("categorias")
+        .select("id, nombre, slug");
 
-    for (let i = 0; i < allInserts.length; i += BATCH_SIZE) {
-      const batch = allInserts.slice(i, i + BATCH_SIZE);
-      const { error } = await supabase.from("productos").insert(batch);
-
-      if (error) {
-        toast.error(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
-        hasError = true;
-        break;
+      const catMap = new Map<string, string>(); // nombre lower -> id
+      for (const c of existingCats || []) {
+        catMap.set(c.nombre.toLowerCase(), c.id);
       }
 
-      imported += batch.length;
-      setImportProgress(Math.round((imported / allInserts.length) * 100));
+      // 3. Create missing categories
+      const slugify = (text: string) =>
+        text.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+          .replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+      const toCreate = uniqueCats.filter((c) => !catMap.has(c.toLowerCase()));
+      if (toCreate.length > 0) {
+        const { data: created, error: catErr } = await supabase
+          .from("categorias")
+          .insert(toCreate.map((c) => ({ nombre: c, slug: slugify(c) })))
+          .select("id, nombre");
+        if (catErr) {
+          toast.error("Error creando categorías: " + catErr.message);
+          setImporting(false);
+          return;
+        }
+        for (const c of created || []) {
+          catMap.set(c.nombre.toLowerCase(), c.id);
+        }
+      }
+
+      // 4. Build inserts with categoria_id
+      const allInserts = rows.map((r) => ({
+        sku: r.sku || null,
+        nombre: r.nombre,
+        precio: r.precio,
+        categoria: r.categoria || null,
+        categoria_id: r.categoria ? (catMap.get(r.categoria.toLowerCase().trim()) || null) : null,
+        nombre_atributo: r.nombre_atributo || null,
+        valor_atributo: r.valor_atributo || null,
+        imagen_url: r.imagen_url || null,
+        imagen_url_2: r.imagen_url_2 || null,
+        imagen_url_3: r.imagen_url_3 || null,
+      }));
+
+      // 5. Batch insert
+      let imported = 0;
+      let hasError = false;
+
+      for (let i = 0; i < allInserts.length; i += BATCH_SIZE) {
+        const batch = allInserts.slice(i, i + BATCH_SIZE);
+        const { error } = await supabase.from("productos").insert(batch);
+
+        if (error) {
+          toast.error(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
+          hasError = true;
+          break;
+        }
+
+        imported += batch.length;
+        setImportProgress(Math.round((imported / allInserts.length) * 100));
+      }
+
+      if (!hasError) {
+        toast.success(`Se importaron ${imported} productos y ${toCreate.length} categorías nuevas`);
+        handleReset();
+      }
+    } catch (err: any) {
+      toast.error("Error inesperado: " + err.message);
     }
 
     setImporting(false);
-
-    if (!hasError) {
-      toast.success(`Se importaron ${imported} registros correctamente`);
-      handleReset();
-    }
   };
 
   const handleReset = () => {
@@ -218,9 +259,9 @@ const ExcelImport = () => {
             <div className="grid gap-3">
               {EXPECTED_FIELDS.map((field) => (
                 <div key={field.key} className="flex items-center gap-3">
-                  <span className="text-sm font-medium w-36 shrink-0 text-right">
+                  <span className="text-sm font-medium w-40 shrink-0 text-right">
                     {field.label}
-                    {(field.key === "nombre" || field.key === "precio") && (
+                    {("required" in field && field.required) && (
                       <span className="text-destructive ml-0.5">*</span>
                     )}
                   </span>
