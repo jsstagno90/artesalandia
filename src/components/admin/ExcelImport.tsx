@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, FileSpreadsheet, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
@@ -13,6 +14,9 @@ const EXPECTED_FIELDS = [
   { key: "categoria", label: "Categoría" },
   { key: "nombre_atributo", label: "Nombre atributo" },
   { key: "valor_atributo", label: "Valor atributo" },
+  { key: "imagen_url", label: "URL imagen 1" },
+  { key: "imagen_url_2", label: "URL imagen 2" },
+  { key: "imagen_url_3", label: "URL imagen 3" },
 ] as const;
 
 type FieldKey = (typeof EXPECTED_FIELDS)[number]["key"];
@@ -24,22 +28,25 @@ interface ParsedRow {
   categoria: string;
   nombre_atributo: string;
   valor_atributo: string;
+  imagen_url: string;
+  imagen_url_2: string;
+  imagen_url_3: string;
 }
+
+const BATCH_SIZE = 500;
 
 const ExcelImport = () => {
   const [rawData, setRawData] = useState<Record<string, unknown>[]>([]);
   const [excelColumns, setExcelColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<FieldKey, string>>({
-    sku: "",
-    nombre: "",
-    precio: "",
-    categoria: "",
-    nombre_atributo: "",
-    valor_atributo: "",
+    sku: "", nombre: "", precio: "", categoria: "",
+    nombre_atributo: "", valor_atributo: "",
+    imagen_url: "", imagen_url_2: "", imagen_url_3: "",
   });
   const [step, setStep] = useState<"upload" | "map" | "preview">("upload");
   const [rows, setRows] = useState<ParsedRow[]>([]);
   const [importing, setImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   const handleFile = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -50,7 +57,6 @@ const ExcelImport = () => {
       const wb = XLSX.read(evt.target?.result, { type: "binary" });
       const ws = wb.Sheets[wb.SheetNames[0]];
 
-      // First get all headers from the sheet range
       const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
       const headers: string[] = [];
       for (let c = range.s.c; c <= range.e.c; c++) {
@@ -58,7 +64,6 @@ const ExcelImport = () => {
         headers.push(cell ? String(cell.v).trim() : `Columna ${c + 1}`);
       }
 
-      // Parse with defval to keep empty cells
       const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
 
       if (data.length === 0) {
@@ -69,9 +74,11 @@ const ExcelImport = () => {
       setExcelColumns(headers);
       setRawData(data);
 
-      // Auto-match columns by similarity
+      // Auto-match
       const autoMap: Record<FieldKey, string> = {
-        sku: "", nombre: "", precio: "", categoria: "", nombre_atributo: "", valor_atributo: "",
+        sku: "", nombre: "", precio: "", categoria: "",
+        nombre_atributo: "", valor_atributo: "",
+        imagen_url: "", imagen_url_2: "", imagen_url_3: "",
       };
       const matchers: Record<FieldKey, string[]> = {
         sku: ["sku"],
@@ -80,6 +87,9 @@ const ExcelImport = () => {
         categoria: ["categoria", "categoría", "categorias", "categorías"],
         nombre_atributo: ["nombre atributo", "nombre_atributo", "atributo nombre"],
         valor_atributo: ["valor atributo", "valor_atributo", "atributo valor"],
+        imagen_url: ["url 1", "url1", "imagen 1", "imagen_url", "url imagen 1"],
+        imagen_url_2: ["url 2", "url2", "imagen 2", "imagen_url_2", "url imagen 2"],
+        imagen_url_3: ["url 3", "url3", "imagen 3", "imagen_url_3", "url imagen 3"],
       };
 
       for (const col of headers) {
@@ -113,6 +123,9 @@ const ExcelImport = () => {
       categoria: mapping.categoria ? String(r[mapping.categoria] ?? "") : "",
       nombre_atributo: mapping.nombre_atributo ? String(r[mapping.nombre_atributo] ?? "") : "",
       valor_atributo: mapping.valor_atributo ? String(r[mapping.valor_atributo] ?? "") : "",
+      imagen_url: mapping.imagen_url ? String(r[mapping.imagen_url] ?? "") : "",
+      imagen_url_2: mapping.imagen_url_2 ? String(r[mapping.imagen_url_2] ?? "") : "",
+      imagen_url_3: mapping.imagen_url_3 ? String(r[mapping.imagen_url_3] ?? "") : "",
     }));
 
     setRows(parsed);
@@ -122,23 +135,41 @@ const ExcelImport = () => {
   const handleImport = async () => {
     if (rows.length === 0) return;
     setImporting(true);
+    setImportProgress(0);
 
-    const inserts = rows.map((r) => ({
+    const allInserts = rows.map((r) => ({
       sku: r.sku || null,
       nombre: r.nombre,
       precio: r.precio,
       categoria: r.categoria || null,
       nombre_atributo: r.nombre_atributo || null,
       valor_atributo: r.valor_atributo || null,
+      imagen_url: r.imagen_url || null,
+      imagen_url_2: r.imagen_url_2 || null,
+      imagen_url_3: r.imagen_url_3 || null,
     }));
 
-    const { error } = await supabase.from("productos").insert(inserts);
+    let imported = 0;
+    let hasError = false;
+
+    for (let i = 0; i < allInserts.length; i += BATCH_SIZE) {
+      const batch = allInserts.slice(i, i + BATCH_SIZE);
+      const { error } = await supabase.from("productos").insert(batch);
+
+      if (error) {
+        toast.error(`Error en lote ${Math.floor(i / BATCH_SIZE) + 1}: ${error.message}`);
+        hasError = true;
+        break;
+      }
+
+      imported += batch.length;
+      setImportProgress(Math.round((imported / allInserts.length) * 100));
+    }
+
     setImporting(false);
 
-    if (error) {
-      toast.error("Error al importar: " + error.message);
-    } else {
-      toast.success(`Se importaron ${rows.length} registros correctamente`);
+    if (!hasError) {
+      toast.success(`Se importaron ${imported} registros correctamente`);
       handleReset();
     }
   };
@@ -146,15 +177,11 @@ const ExcelImport = () => {
   const handleReset = () => {
     setRawData([]);
     setExcelColumns([]);
-    setMapping({ sku: "", nombre: "", precio: "", categoria: "", nombre_atributo: "", valor_atributo: "" });
+    setMapping({ sku: "", nombre: "", precio: "", categoria: "", nombre_atributo: "", valor_atributo: "", imagen_url: "", imagen_url_2: "", imagen_url_3: "" });
     setRows([]);
     setStep("upload");
+    setImportProgress(0);
   };
-
-  const grouped = rows.reduce<Record<string, ParsedRow[]>>((acc, r) => {
-    (acc[r.nombre] = acc[r.nombre] || []).push(r);
-    return acc;
-  }, {});
 
   return (
     <div className="space-y-6">
@@ -165,7 +192,6 @@ const ExcelImport = () => {
         </p>
       </div>
 
-      {/* Step 1: Upload */}
       {step === "upload" && (
         <label className="flex flex-col items-center justify-center border-2 border-dashed rounded-xl p-10 cursor-pointer hover:border-primary/50 transition-colors bg-muted/30">
           <FileSpreadsheet className="h-10 w-10 text-muted-foreground mb-3" />
@@ -176,7 +202,6 @@ const ExcelImport = () => {
         </label>
       )}
 
-      {/* Step 2: Column mapping */}
       {step === "map" && (
         <div className="space-y-4">
           <div className="bg-card border rounded-xl p-5 space-y-4">
@@ -212,9 +237,7 @@ const ExcelImport = () => {
                     <SelectContent>
                       <SelectItem value="__none__">— No asignada —</SelectItem>
                       {excelColumns.map((col) => (
-                        <SelectItem key={col} value={col}>
-                          {col}
-                        </SelectItem>
+                        <SelectItem key={col} value={col}>{col}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -222,7 +245,6 @@ const ExcelImport = () => {
               ))}
             </div>
 
-            {/* Preview of first 3 raw rows */}
             <div className="mt-4">
               <p className="text-xs font-medium text-muted-foreground mb-2">Vista previa de las primeras filas del Excel:</p>
               <div className="overflow-x-auto max-h-40 border rounded-lg">
@@ -249,20 +271,17 @@ const ExcelImport = () => {
           </div>
 
           <div className="flex gap-3">
-            <Button onClick={handleConfirmMapping} className="gap-2">
-              Confirmar mapeo
-            </Button>
+            <Button onClick={handleConfirmMapping} className="gap-2">Confirmar mapeo</Button>
             <Button variant="outline" onClick={handleReset}>Cancelar</Button>
           </div>
         </div>
       )}
 
-      {/* Step 3: Preview & Import */}
       {step === "preview" && (
         <>
           <div className="bg-card border rounded-xl overflow-hidden">
             <div className="p-4 border-b bg-muted/30">
-              <p className="font-semibold">{rows.length} filas parseadas · {Object.keys(grouped).length} productos</p>
+              <p className="font-semibold">{rows.length} filas parseadas</p>
             </div>
             <div className="max-h-80 overflow-y-auto">
               <table className="w-full text-sm">
@@ -274,10 +293,13 @@ const ExcelImport = () => {
                     <th className="text-left p-3">Atributo</th>
                     <th className="text-left p-3">Valor</th>
                     <th className="text-right p-3">Precio</th>
+                    <th className="text-left p-3">URL 1</th>
+                    <th className="text-left p-3">URL 2</th>
+                    <th className="text-left p-3">URL 3</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((r, i) => (
+                  {rows.slice(0, 50).map((r, i) => (
                     <tr key={i} className="border-t">
                       <td className="p-3 font-mono text-xs">{r.sku}</td>
                       <td className="p-3">{r.nombre}</td>
@@ -285,20 +307,35 @@ const ExcelImport = () => {
                       <td className="p-3">{r.nombre_atributo}</td>
                       <td className="p-3">{r.valor_atributo}</td>
                       <td className="p-3 text-right font-medium">${r.precio.toFixed(2)}</td>
+                      <td className="p-3 text-xs max-w-[150px] truncate">{r.imagen_url}</td>
+                      <td className="p-3 text-xs max-w-[150px] truncate">{r.imagen_url_2}</td>
+                      <td className="p-3 text-xs max-w-[150px] truncate">{r.imagen_url_3}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
+            {rows.length > 50 && (
+              <div className="p-3 text-center text-xs text-muted-foreground border-t">
+                Mostrando 50 de {rows.length} filas
+              </div>
+            )}
           </div>
+
+          {importing && (
+            <div className="space-y-2">
+              <Progress value={importProgress} className="h-3" />
+              <p className="text-sm text-muted-foreground text-center">{importProgress}% importado</p>
+            </div>
+          )}
 
           <div className="flex gap-3">
             <Button onClick={handleImport} disabled={importing} className="gap-2">
               {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              Confirmar importación
+              Importar {rows.length} filas
             </Button>
-            <Button variant="outline" onClick={() => setStep("map")}>Volver al mapeo</Button>
-            <Button variant="outline" onClick={handleReset}>Cancelar</Button>
+            <Button variant="outline" onClick={() => setStep("map")} disabled={importing}>Volver al mapeo</Button>
+            <Button variant="outline" onClick={handleReset} disabled={importing}>Cancelar</Button>
           </div>
         </>
       )}
