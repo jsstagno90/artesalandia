@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { driveUrlToImage } from "@/lib/driveUrl";
 
 export interface Producto {
   id: string;
@@ -84,17 +85,17 @@ export const groupProducts = (products: Producto[]): ProductGroup[] => {
         nombre: p.nombre,
         categoria: p.categoria,
         categoria_id: p.categoria_id,
-        imagen_url: p.imagen_url,
-        imagen_url_2: p.imagen_url_2,
-        imagen_url_3: p.imagen_url_3,
+        imagen_url: driveUrlToImage(p.imagen_url),
+        imagen_url_2: driveUrlToImage(p.imagen_url_2),
+        imagen_url_3: driveUrlToImage(p.imagen_url_3),
         nombre_atributo: p.nombre_atributo,
         variantes: [],
       });
     }
     const group = map.get(p.nombre)!;
-    if (!group.imagen_url && p.imagen_url) group.imagen_url = p.imagen_url;
-    if (!group.imagen_url_2 && p.imagen_url_2) group.imagen_url_2 = p.imagen_url_2;
-    if (!group.imagen_url_3 && p.imagen_url_3) group.imagen_url_3 = p.imagen_url_3;
+    if (!group.imagen_url && p.imagen_url) group.imagen_url = driveUrlToImage(p.imagen_url);
+    if (!group.imagen_url_2 && p.imagen_url_2) group.imagen_url_2 = driveUrlToImage(p.imagen_url_2);
+    if (!group.imagen_url_3 && p.imagen_url_3) group.imagen_url_3 = driveUrlToImage(p.imagen_url_3);
     group.variantes.push({
       id: p.id,
       valor_atributo: p.valor_atributo,

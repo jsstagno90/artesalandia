@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ChevronLeft, Loader2, Package } from "lucide-react";
+import { driveUrlToImage } from "@/lib/driveUrl";
 
 const ProductDetail = () => {
   const { nombre } = useParams<{ nombre: string }>();
@@ -48,7 +49,7 @@ const ProductDetail = () => {
   }
 
   const selected = variants[selectedIdx];
-  const images = [selected.imagen_url, selected.imagen_url_2, selected.imagen_url_3].filter(Boolean) as string[];
+  const images = [driveUrlToImage(selected.imagen_url), driveUrlToImage(selected.imagen_url_2), driveUrlToImage(selected.imagen_url_3)].filter(Boolean) as string[];
   const currentMain = mainImage || images[0] || null;
   const hasVariants = variants.length > 1;
   const attrName = selected.nombre_atributo;
