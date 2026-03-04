@@ -109,19 +109,31 @@ const CategoryManager = () => {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Eliminar esta categoría?")) return;
+    const cat = categorias?.find((c) => c.id === id);
+    if (!confirm(`¿Eliminar esta categoría? Se eliminarán TODOS los productos que contiene.`)) return;
+    // Also delete products matched by text categoria field
+    if (cat) {
+      await supabase.from("productos").delete().eq("categoria", cat.nombre);
+    }
     const { error } = await supabase.from("categorias").delete().eq("id", id);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success("Categoría eliminada");
+      toast.success("Categoría y sus productos eliminados");
       queryClient.invalidateQueries({ queryKey: ["categorias-admin"] });
+      queryClient.invalidateQueries({ queryKey: ["productos"] });
     }
   };
 
   const handleBulkDelete = async () => {
     if (selected.size === 0) return;
-    if (!confirm(`¿Eliminar ${selected.size} categoría(s)?`)) return;
+    if (!confirm(`¿Eliminar ${selected.size} categoría(s)? Se eliminarán TODOS los productos que contienen.`)) return;
+    // Delete products matched by text categoria field
+    const selectedCats = categorias?.filter((c) => selected.has(c.id)) ?? [];
+    const catNames = selectedCats.map((c) => c.nombre);
+    if (catNames.length > 0) {
+      await supabase.from("productos").delete().in("categoria", catNames);
+    }
     const { error } = await supabase
       .from("categorias")
       .delete()
@@ -129,9 +141,10 @@ const CategoryManager = () => {
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success(`${selected.size} categoría(s) eliminada(s)`);
+      toast.success(`${selected.size} categoría(s) y sus productos eliminados`);
       setSelected(new Set());
       queryClient.invalidateQueries({ queryKey: ["categorias-admin"] });
+      queryClient.invalidateQueries({ queryKey: ["productos"] });
     }
   };
 
