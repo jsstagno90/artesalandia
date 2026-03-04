@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { LogOut, FileSpreadsheet, Image, DollarSign, Settings, Tag } from "lucide-react";
 import ExcelImport from "@/components/admin/ExcelImport";
+import ExcelExport from "@/components/admin/ExcelExport";
 import ImageManager from "@/components/admin/ImageManager";
 import PriceUpdater from "@/components/admin/PriceUpdater";
 import ConfigPanel from "@/components/admin/ConfigPanel";
@@ -65,7 +66,12 @@ const Admin = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="import"><ExcelImport /></TabsContent>
+          <TabsContent value="import">
+            <div className="flex justify-end mb-4">
+              <ExcelExport />
+            </div>
+            <ExcelImport />
+          </TabsContent>
           <TabsContent value="categories"><CategoryManager /></TabsContent>
           <TabsContent value="images"><ImageManager /></TabsContent>
           <TabsContent value="prices"><PriceUpdater /></TabsContent>
