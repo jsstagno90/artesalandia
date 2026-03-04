@@ -52,14 +52,23 @@ const ProductList = () => {
     if (selected.size === 0) return;
     if (!confirm(`¿Eliminar ${selected.size} producto(s)? Esta acción no se puede deshacer.`)) return;
     setDeleting(true);
-    const { error } = await supabase
-      .from("productos")
-      .delete()
-      .in("id", Array.from(selected));
+    const ids = Array.from(selected);
+    const batchSize = 100;
+    let hasError = false;
+    for (let i = 0; i < ids.length; i += batchSize) {
+      const batch = ids.slice(i, i + batchSize);
+      const { error } = await supabase
+        .from("productos")
+        .delete()
+        .in("id", batch);
+      if (error) {
+        toast.error(error.message);
+        hasError = true;
+        break;
+      }
+    }
     setDeleting(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
+    if (!hasError) {
       toast.success(`${selected.size} producto(s) eliminado(s)`);
       setSelected(new Set());
       queryClient.invalidateQueries({ queryKey: ["productos"] });
