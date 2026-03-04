@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { driveUrlToImage } from "@/lib/driveUrl";
 import * as XLSX from "xlsx";
 
 const EXPECTED_FIELDS = [
@@ -181,9 +182,9 @@ const ExcelImport = () => {
         categoria_id: r.categoria ? (catMap.get(r.categoria.toLowerCase().trim()) || null) : null,
         nombre_atributo: r.nombre_atributo || null,
         valor_atributo: r.valor_atributo || null,
-        imagen_url: r.imagen_url || null,
-        imagen_url_2: r.imagen_url_2 || null,
-        imagen_url_3: r.imagen_url_3 || null,
+        imagen_url: driveUrlToImage(r.imagen_url),
+        imagen_url_2: driveUrlToImage(r.imagen_url_2),
+        imagen_url_3: driveUrlToImage(r.imagen_url_3),
       }));
 
       // 5. Batch insert
