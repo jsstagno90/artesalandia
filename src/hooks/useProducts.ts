@@ -70,6 +70,8 @@ export interface ProductGroup {
   categoria: string | null;
   categoria_id: string | null;
   imagen_url: string | null;
+  imagen_url_2: string | null;
+  imagen_url_3: string | null;
   nombre_atributo: string | null;
   variantes: { id: string; valor_atributo: string | null; precio: number; sku: string | null }[];
 }
@@ -83,12 +85,16 @@ export const groupProducts = (products: Producto[]): ProductGroup[] => {
         categoria: p.categoria,
         categoria_id: p.categoria_id,
         imagen_url: p.imagen_url,
+        imagen_url_2: p.imagen_url_2,
+        imagen_url_3: p.imagen_url_3,
         nombre_atributo: p.nombre_atributo,
         variantes: [],
       });
     }
     const group = map.get(p.nombre)!;
     if (!group.imagen_url && p.imagen_url) group.imagen_url = p.imagen_url;
+    if (!group.imagen_url_2 && p.imagen_url_2) group.imagen_url_2 = p.imagen_url_2;
+    if (!group.imagen_url_3 && p.imagen_url_3) group.imagen_url_3 = p.imagen_url_3;
     group.variantes.push({
       id: p.id,
       valor_atributo: p.valor_atributo,
