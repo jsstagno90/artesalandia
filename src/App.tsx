@@ -13,6 +13,7 @@ import Contact from "./pages/Contact";
 import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
+import { ChatFloatingButton } from "./components/ChatFloatingButton";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,8 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       {!isAdmin && <Header />}
       {!isAdmin && <CartDrawer />}
       {children}
+      {/* El chat solo se verá si NO es la página de admin */}
+      {!isAdmin && <ChatFloatingButton />}
     </>
   );
 };
@@ -53,4 +56,4 @@ const App = () => (
   </QueryClientProvider>
 );
 
-export default App;
+export default App
