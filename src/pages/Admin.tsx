@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { LogOut, FileSpreadsheet, Image, DollarSign, Settings, Tag } from "lucide-react";
+import { LogOut, FileSpreadsheet, Image, DollarSign, Settings, Tag, Package } from "lucide-react";
 import ExcelImport from "@/components/admin/ExcelImport";
 import ExcelExport from "@/components/admin/ExcelExport";
 import ImageManager from "@/components/admin/ImageManager";
 import PriceUpdater from "@/components/admin/PriceUpdater";
 import ConfigPanel from "@/components/admin/ConfigPanel";
 import CategoryManager from "@/components/admin/CategoryManager";
+import ProductList from "@/components/admin/ProductList";
 
 const Admin = () => {
   const navigate = useNavigate();
@@ -47,8 +48,11 @@ const Admin = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="import" className="space-y-6">
-          <TabsList className="grid grid-cols-2 md:grid-cols-5 h-auto gap-2 bg-transparent p-0">
+        <Tabs defaultValue="products" className="space-y-6">
+          <TabsList className="grid grid-cols-2 md:grid-cols-6 h-auto gap-2 bg-transparent p-0">
+            <TabsTrigger value="products" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 border">
+              <Package className="h-4 w-4" /> Productos
+            </TabsTrigger>
             <TabsTrigger value="import" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground gap-2 border">
               <FileSpreadsheet className="h-4 w-4" /> Importar
             </TabsTrigger>
@@ -65,6 +69,8 @@ const Admin = () => {
               <Settings className="h-4 w-4" /> Configuración
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="products"><ProductList /></TabsContent>
 
           <TabsContent value="import">
             <div className="flex justify-end mb-4">
