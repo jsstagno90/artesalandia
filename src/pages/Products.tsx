@@ -2,16 +2,23 @@ import { useState } from "react";
 import { useProducts, useCategories, groupProducts } from "@/hooks/useProducts";
 import ProductCard from "@/components/ProductCard";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Loader2, Search } from "lucide-react";
 
 const Products = () => {
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useCategories();
   const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
-  const filtered = activeCategoryId
-    ? (products || []).filter((p) => p.categoria_id === activeCategoryId)
-    : products || [];
+  const filtered = (products || []).filter((p) => {
+    const matchCat = !activeCategoryId || p.categoria_id === activeCategoryId;
+    const matchSearch =
+      !search ||
+      p.nombre.toLowerCase().includes(search.toLowerCase()) ||
+      (p.sku ?? "").toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
 
   const grouped = groupProducts(filtered);
 
