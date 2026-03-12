@@ -21,7 +21,7 @@ const ExcelExport = () => {
           .select(`
             id, sku, nombre, precio, categoria_id, nombre_atributo, valor_atributo, 
             imagen_url, imagen_url_2, imagen_url_3, created_at,
-            categorias!inner(nombre)
+            categorias!left(nombre)
           `)
           .order("sku", { ascending: true, nullsFirst: false })
           .range(from, from + PAGE - 1);
