@@ -36,13 +36,16 @@ const ExcelExport = () => {
       const rows = allProducts.map((p) => ({
         SKU: p.sku ?? "",
         Nombre: p.nombre,
+        Categoria: p.categoria ?? "",
+        "ID Categoria": p.categoria_id ?? "",
         Precio: p.precio,
-        "Categoría": p.categoria ?? "",
-        "Nombre atributo 1": p.nombre_atributo ?? "",
-        "Valor atributo 1": p.valor_atributo ?? "",
-        URL: p.imagen_url ?? "",
-        "URL 2": p.imagen_url_2 ?? "",
-        "URL 3": p.imagen_url_3 ?? "",
+        "Atributo": p.nombre_atributo ?? "",
+        "Valor Atributo": p.valor_atributo ?? "",
+        "Foto 1": p.imagen_url ?? "",
+        "Foto 2": p.imagen_url_2 ?? "",
+        "Foto 3": p.imagen_url_3 ?? "",
+        ID: p.id,
+        "Fecha Creacion": p.created_at,
       }));
 
       const ws = XLSX.utils.json_to_sheet(rows);
