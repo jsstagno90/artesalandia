@@ -40,10 +40,10 @@ const ExcelExport = () => {
       const rows = allProducts.map((p) => ({
         SKU: p.sku ?? "",
         Nombre: p.nombre,
-        Categoria: p.categoria ?? "",
+        Categoria: p.categorias?.nombre ?? "",
         "ID Categoria": p.categoria_id ?? "",
         Precio: p.precio,
-        "Atributo": p.nombre_atributo ?? "",
+        Atributo: p.nombre_atributo ?? "",
         "Valor Atributo": p.valor_atributo ?? "",
         "Foto 1": p.imagen_url ?? "",
         "Foto 2": p.imagen_url_2 ?? "",
