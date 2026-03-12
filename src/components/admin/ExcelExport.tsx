@@ -18,8 +18,8 @@ const ExcelExport = () => {
       while (true) {
         const { data, error } = await supabase
           .from("productos")
-          .select("sku, nombre, precio, categoria, nombre_atributo, valor_atributo, imagen_url, imagen_url_2, imagen_url_3")
-          .order("nombre")
+          .select("id, sku, nombre, precio, categoria, categoria_id, nombre_atributo, valor_atributo, imagen_url, imagen_url_2, imagen_url_3, created_at")
+          .order("sku", { ascending: true, nullsFirst: false })
           .range(from, from + PAGE - 1);
         if (error) throw error;
         allProducts.push(...data);
