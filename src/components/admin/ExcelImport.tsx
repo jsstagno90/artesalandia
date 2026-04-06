@@ -55,57 +55,67 @@ const ExcelImport = () => {
 
     const reader = new FileReader();
     reader.onload = (evt) => {
-      const wb = XLSX.read(evt.target?.result, { type: "binary" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
+      try {
+        const wb = XLSX.read(evt.target?.result, { type: "binary" });
+        const ws = wb.Sheets[wb.SheetNames[0]];
 
-      const range = XLSX.utils.decode_range(ws["!ref"] || "A1");
-      const headers: string[] = [];
-      for (let c = range.s.c; c <= range.e.c; c++) {
-        const cell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
-        headers.push(cell ? String(cell.v).trim() : `Columna ${c + 1}`);
-      }
+        if (!ws || !ws["!ref"]) {
+          toast.error("No se pudo leer la hoja del archivo");
+          return;
+        }
 
-      const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
+        const range = XLSX.utils.decode_range(ws["!ref"]);
+        const headers: string[] = [];
+        for (let c = range.s.c; c <= range.e.c; c++) {
+          const cell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
+          headers.push(cell ? String(cell.v).trim() : `Columna ${c + 1}`);
+        }
 
-      if (data.length === 0) {
-        toast.error("El archivo está vacío");
-        return;
-      }
+        const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
 
-      setExcelColumns(headers);
-      setRawData(data);
+        if (data.length === 0) {
+          toast.error("El archivo está vacío");
+          return;
+        }
 
-      // Auto-match
-      const autoMap: Record<FieldKey, string> = {
-        sku: "", nombre: "", precio: "", categoria: "",
-        nombre_atributo: "", valor_atributo: "",
-        imagen_url: "", imagen_url_2: "", imagen_url_3: "",
-      };
-      const matchers: Record<FieldKey, string[]> = {
-        sku: ["sku"],
-        nombre: ["nombre"],
-        precio: ["precio"],
-        categoria: ["categoria", "categoría", "categorias", "categorías"],
-        nombre_atributo: ["nombre atributo", "nombre_atributo", "atributo nombre", "nombre atributo 1"],
-        valor_atributo: ["valor atributo", "valor_atributo", "atributo valor", "valor atributo 1"],
-        imagen_url: ["url", "url 1", "url1", "imagen 1", "imagen_url", "url imagen 1"],
-        imagen_url_2: ["url 2", "url2", "imagen 2", "imagen_url_2", "url imagen 2"],
-        imagen_url_3: ["url 3", "url3", "imagen 3", "imagen_url_3", "url imagen 3"],
-      };
+        setExcelColumns(headers);
+        setRawData(data);
 
-      for (const col of headers) {
-        const lower = col.toLowerCase().trim();
-        for (const [field, patterns] of Object.entries(matchers)) {
-          if (patterns.some((p) => lower === p || lower.includes(p))) {
-            if (!autoMap[field as FieldKey]) {
-              autoMap[field as FieldKey] = col;
+        // Auto-match
+        const autoMap: Record<FieldKey, string> = {
+          sku: "", nombre: "", precio: "", categoria: "",
+          nombre_atributo: "", valor_atributo: "",
+          imagen_url: "", imagen_url_2: "", imagen_url_3: "",
+        };
+        const matchers: Record<FieldKey, string[]> = {
+          sku: ["sku"],
+          nombre: ["nombre"],
+          precio: ["precio"],
+          categoria: ["categoria", "categoría", "categorias", "categorías"],
+          nombre_atributo: ["nombre atributo", "nombre_atributo", "atributo nombre", "nombre atributo 1"],
+          valor_atributo: ["valor atributo", "valor_atributo", "atributo valor", "valor atributo 1"],
+          imagen_url: ["url", "url 1", "url1", "imagen 1", "imagen_url", "url imagen 1"],
+          imagen_url_2: ["url 2", "url2", "imagen 2", "imagen_url_2", "url imagen 2"],
+          imagen_url_3: ["url 3", "url3", "imagen 3", "imagen_url_3", "url imagen 3"],
+        };
+
+        for (const col of headers) {
+          const lower = col.toLowerCase().trim();
+          for (const [field, patterns] of Object.entries(matchers)) {
+            if (patterns.some((p) => lower === p || lower.includes(p))) {
+              if (!autoMap[field as FieldKey]) {
+                autoMap[field as FieldKey] = col;
+              }
             }
           }
         }
-      }
 
-      setMapping(autoMap);
-      setStep("map");
+        setMapping(autoMap);
+        setStep("map");
+      } catch (err: any) {
+        console.error("Error parsing Excel:", err);
+        toast.error("Error al leer el archivo: " + (err.message || "formato no válido"));
+      }
     };
     reader.readAsBinaryString(file);
     e.target.value = "";
