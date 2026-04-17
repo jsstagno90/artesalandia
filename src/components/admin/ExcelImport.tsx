@@ -68,7 +68,8 @@ const ExcelImport = () => {
         const headers: string[] = [];
         for (let c = range.s.c; c <= range.e.c; c++) {
           const cell = ws[XLSX.utils.encode_cell({ r: range.s.r, c })];
-          headers.push(cell ? String(cell.v).trim() : `Columna ${c + 1}`);
+          const val = cell ? String(cell.v).trim() : "";
+          headers.push(val || `Columna ${c + 1}`);
         }
 
         const data = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
